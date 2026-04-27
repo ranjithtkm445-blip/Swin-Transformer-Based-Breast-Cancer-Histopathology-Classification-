@@ -1,66 +1,147 @@
+Here’s a **clean, structured, and aligned version** of your project. I’ve corrected formatting, tightened technical phrasing, removed redundancy, and improved readability while keeping your core work intact.
 
-Breast Cancer Histopathology Classification with Spatial Attention Visualization
-Author: Ranjith Kumar | HF Space: ranjith445-breakhis-swin.hf.space
-Project Description
-Swin Transformer trained on 350 BreakHis histopathology images classifies breast tissue as Benign or Malignant with 92.86% F1 and 100% precision, using spatial attention maps to visualize tissue regions influencing each prediction.
-Model
-Architecture : Swin-Tiny (swin_tiny_patch4_window7_224)
-Task : Binary classification — Benign vs Malignant
-Subtypes : Benign (A, F, PT, TA) vs Malignant (DC, MC)
-Magnification : 40X
-Training : 245 images (subset of BreakHis)
-Pretrained : ImageNet-1k via timm
-Results
-Metric | Score | Notes
-Test Accuracy | 90.7% |
-Test F1 Score | 92.86% |
-Precision | 100.0% | Zero false positives
-Recall | 86.67% |
-Val F1 | 92.5% | Best epoch 15/30
-Dataset
-Name : BreakHis (Breast Cancer Histopathological Image Classification)
-Total images : 7,909 microscopic images from 82 patients
-Magnifications: 40X, 100X, 200X, 400X
-Used subset : 40X only — 1,850 images after filtering
-Benign : 625 images (Adenosis, Fibroadenoma, Phyllodes Tumor, Tubular Adenoma)
-Malignant : 1,225 images (Ductal Carcinoma, Lobular Carcinoma, Mucinous Carcinoma)
-Methodology
-Data Pipeline
-— Patient-level train/val/test split — prevents data leakage across splits
-— WeightedRandomSampler — handles 1:2.2 benign/malignant class imbalance
-— Macenko stain normalization — standardizes H&E color variation across slides
-— Train augmentation: Random flip, rotation, color jitter
-Model Architecture
-— Backbone: Swin-Tiny pretrained on ImageNet-1k via timm
-— Last 2 Swin stages unfrozen for fine-tuning on histopathology
-— Custom head: LayerNorm -> Dropout -> Linear(768->128) -> GELU -> Linear(128->2)
-— Spatial attention maps from last Swin stage (7x7 -> upsampled to 224x224)
-Training
-— Optimizer : AdamW (lr=1e-5, weight_decay=1e-4)
-— Scheduler : CosineAnnealingLR
-— Loss : CrossEntropyLoss with class weights
-— Early stopping: patience=15, metric=val F1
-— Epochs : 30 max (best at epoch 15)
-Why Swin Transformer over ViT
-Feature | ViT-small (old) | Swin-Tiny (current)
-Attention type | Global — all 196 patches | Local windows, hierarchical
-Data requirement | 10,000+ images | Works on 245 images
-Tissue reading | Flat, no hierarchy | Cell-level to tissue-level
-Patch size | 16x16 | 4x4 (finer detail)
-Our F1 score | 68.35% | 92.86%
-App Features
-— Preloaded samples — 1 image per tumor subtype (8 total)
-— Attention heatmap overlay — spatial attention visualization
-— Transformer relationship insights — what the model found in tissue
-— Model performance metrics — accuracy, F1, precision, recall
-— ViT vs Swin comparison table
-Technical Stack
-PyTorch 2.0 — model training and inference
-timm 0.9.12 — Swin-Tiny pretrained backbone
-Streamlit — web application
-scikit-learn — metrics and evaluation
-Matplotlib — attention heatmap visualization
-Docker — containerized deployment
-HF Spaces — cloud deployment
-Disclaimer
-This model is trained on a subset of 245 images for demonstration purposes only. Not intended for clinical use. Results may not generalize to real-world clinical settings.Sonnet 4.6
+---
+
+# **Breast Cancer Histopathology Classification with Spatial Attention Visualization**
+
+**Author:** Ranjith Kumar
+**Deployment:** HF Space – ranjith445-breakhis-swin.hf.space
+
+---
+
+## **Project Overview**
+
+A **Swin Transformer-based deep learning system** for classifying breast histopathology images into **Benign** and **Malignant** categories.
+
+The model integrates **spatial attention visualization**, enabling interpretability by highlighting tissue regions that influence predictions.
+
+---
+
+## **Key Results**
+
+| Metric            | Score  | Notes                            |
+| ----------------- | ------ | -------------------------------- |
+| **Test Accuracy** | 90.7%  |                                  |
+| **F1 Score**      | 92.86% | Strong class balance performance |
+| **Precision**     | 100.0% | No false positives               |
+| **Recall**        | 86.67% | Slight miss on malignant cases   |
+| **Validation F1** | 92.5%  | Best at epoch 15                 |
+
+---
+
+## **Dataset**
+
+* **Name:** BreakHis (Breast Cancer Histopathological Image Classification)
+* **Total Images:** 7,909 (82 patients)
+* **Magnifications:** 40X, 100X, 200X, 400X
+
+### **Filtered Dataset (Used)**
+
+* **Magnification:** 40X only
+* **Total:** 1,850 images
+
+**Class Distribution:**
+
+* **Benign (625):** Adenosis (A), Fibroadenoma (F), Phyllodes Tumor (PT), Tubular Adenoma (TA)
+* **Malignant (1225):** Ductal Carcinoma (DC), Lobular Carcinoma (MC), Mucinous Carcinoma
+
+---
+
+## **Model Architecture**
+
+* **Backbone:** Swin-Tiny (`swin_tiny_patch4_window7_224`)
+* **Pretraining:** ImageNet-1k (via timm)
+* **Task:** Binary Classification (Benign vs Malignant)
+
+### **Custom Classification Head**
+
+LayerNorm → Dropout → Linear (768 → 128) → GELU → Linear (128 → 2)
+
+### **Fine-tuning Strategy**
+
+* Last **two Swin stages unfrozen**
+* Earlier layers kept frozen for stability on small dataset
+
+---
+
+## **Methodology**
+
+### **1. Data Pipeline**
+
+* Patient-level train/val/test split (prevents leakage)
+* WeightedRandomSampler (handles 1:2.2 imbalance)
+* Macenko stain normalization (H&E consistency)
+* Augmentations:
+
+  * Random flip
+  * Rotation
+  * Color jitter
+
+---
+
+### **2. Training Configuration**
+
+* **Optimizer:** AdamW (lr = 1e-5, weight_decay = 1e-4)
+* **Scheduler:** CosineAnnealingLR
+* **Loss:** CrossEntropy (with class weights)
+* **Epochs:** 30 (early stopping at 15)
+* **Early Stopping Metric:** Validation F1
+
+---
+
+### **3. Spatial Attention Visualization**
+
+* Extracted from **final Swin stage (7×7 feature map)**
+* Upsampled to **224×224 resolution**
+* Overlayed as **heatmaps** on original images
+
+**Purpose:**
+
+* Improves interpretability
+* Highlights tumor-relevant tissue regions
+* Provides model reasoning insights
+
+---
+
+## **Why Swin Transformer over ViT**
+
+| Feature              | ViT-Small   | Swin-Tiny                |
+| -------------------- | ----------- | ------------------------ |
+| Attention            | Global      | Local window-based       |
+| Hierarchy            | Flat        | Multi-scale hierarchical |
+| Patch Size           | 16×16       | 4×4 (finer detail)       |
+| Data Requirement     | High (>10k) | Works on small datasets  |
+| Tissue Understanding | Limited     | Cell-to-tissue hierarchy |
+| F1 Score             | 68.35%      | **92.86%**               |
+
+---
+
+## **Application Features**
+
+* Preloaded sample images (8 tumor subtypes)
+* Attention heatmap overlay visualization
+* Transformer interpretability insights
+* Performance metrics display
+* ViT vs Swin comparison module
+
+---
+
+## **Tech Stack**
+
+* **PyTorch 2.0** – Training & inference
+* **timm 0.9.12** – Model backbone
+* **Streamlit** – Web interface
+* **scikit-learn** – Metrics
+* **Matplotlib** – Visualization
+* **Docker** – Deployment
+* **Hugging Face Spaces** – Hosting
+
+---
+
+## **Disclaimer**
+
+This model is trained on a **small subset (245 images)** for demonstration purposes only.
+It is **not intended for clinical use** and may not generalize to real-world medical settings.
+
+---
+
