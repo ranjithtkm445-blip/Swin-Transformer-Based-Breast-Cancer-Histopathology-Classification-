@@ -1,147 +1,249 @@
 
-
----
-
-# **Breast Cancer Histopathology Classification with Spatial Attention Visualization**
+ Breast Cancer Histopathology Classification with Explainable Swin Transformer
 
 **Author:** Ranjith Kumar
-**Deployment:**https://ranjith445-breakhis-swin.hf.space/  
+**Live Demo:** [https://ranjith445-breakhis-swin.hf.space/](https://ranjith445-breakhis-swin.hf.space/)
 
 ---
 
-## **Project Overview*
+ 1. Problem (Simple Story)
 
-A **Swin Transformer-based deep learning system** for classifying breast histopathology images into **Benign** and **Malignant** categories.
+Doctors diagnose breast cancer by examining tissue images under a microscope.
+This process is:
 
-The model integrates **spatial attention visualization**, enabling interpretability by highlighting tissue regions that influence predictions.
+* Time-consuming
+* Requires high expertise
+* Can vary slightly between doctors
 
----
+At the same time, many AI models can predict results but **fail to explain why**, making them hard to trust.
 
-## **Key Results**
+The challenge is to build a system that:
 
-| Metric            | Score  | Notes                            |
-| ----------------- | ------ | -------------------------------- |
-| **Test Accuracy** | 90.7%  |                                  |
-| **F1 Score**      | 92.86% | Strong class balance performance |
-| **Precision**     | 100.0% | No false positives               |
-| **Recall**        | 86.67% | Slight miss on malignant cases   |
-| **Validation F1** | 92.5%  | Best at epoch 15                 |
+* Can **classify tissue images**
+* And also **show what it is looking at**
 
 ---
 
-## **Dataset**
+ 2. Solution Overview
 
-* **Name:** BreakHis (Breast Cancer Histopathological Image Classification)
-* **Total Images:** 7,909 (82 patients)
-* **Magnifications:** 40X, 100X, 200X, 400X
+This project builds a **proof-of-concept AI system** using a **Swin Transformer** to classify histopathology images as **Benign** or **Malignant**, while also providing visual explanations.
 
-### **Filtered Dataset (Used)**
+ How the model makes decisions (relational understanding)
 
-* **Magnification:** 40X only
-* **Total:** 1,850 images
+Instead of looking at the image as a whole, the model works by **relating different regions of the image**:
 
-**Class Distribution:**
+1. **Splits the image into small patches**
+   Each patch represents a tiny part of the tissue
 
-* **Benign (625):** Adenosis (A), Fibroadenoma (F), Phyllodes Tumor (PT), Tubular Adenoma (TA)
-* **Malignant (1225):** Ductal Carcinoma (DC), Lobular Carcinoma (MC), Mucinous Carcinoma
+2. **Learns relationships between nearby patches**
+   Checks if:
 
----
+   * Cells are evenly spaced
+   * Neighboring regions follow consistent patterns
+   * Tissue structure is organized
 
-## **Model Architecture**
+   👉 Organized → Benign
+   👉 Irregular → Malignant
 
-* **Backbone:** Swin-Tiny (`swin_tiny_patch4_window7_224`)
-* **Pretraining:** ImageNet-1k (via timm)
-* **Task:** Binary Classification (Benign vs Malignant)
+3. **Connects neighboring regions (shifted windows)**
+   Builds relationships across the image
 
-### **Custom Classification Head**
+4. **Builds a bigger picture step-by-step**
+   Cells → tissue → overall structure
 
-LayerNorm → Dropout → Linear (768 → 128) → GELU → Linear (128 → 2)
-
-### **Fine-tuning Strategy**
-
-* Last **two Swin stages unfrozen**
-* Earlier layers kept frozen for stability on small dataset
+5. **Makes the final prediction**
+   Based on how consistent or disrupted the tissue patterns are
 
 ---
 
-## **Methodology**
+ 3. Project Scope (Important)
 
-### **1. Data Pipeline**
+* This is a **demonstration project**
+* Focus is on:
 
-* Patient-level train/val/test split (prevents leakage)
-* WeightedRandomSampler (handles 1:2.2 imbalance)
-* Macenko stain normalization (H&E consistency)
+  * End-to-end pipeline
+  * Interpretability (Attention + Grad-CAM)
+  * Deployment
+
+Trained on a small subset of 245 images
+
+* Not optimized for clinical accuracy
+* Not intended for medical use
+
+---
+
+4. Key Results
+
+| Metric    | Score  | Insight                          |
+| --------- | ------ | -------------------------------- |
+| Accuracy  | 90.7%  | Good performance on demo dataset |
+| F1 Score  | 92.86% | Balanced classification          |
+| Precision | 100%   | No false positives               |
+| Recall    | 86.67% | Some malignant cases missed      |
+
+Results are based on a **limited dataset (trained on 245 images) and are for demonstration only.
+
+---
+
+## 🧬 5. Dataset
+
+**BreakHis Dataset**
+
+* Total images: 7,909
+* Patients: 82
+
+### Used in this project:
+
+* Magnification: **40X**
+* Filtered images: 1,850
+
+### 📊 Demo Training Setup
+
+| Split      | Images Used |
+| ---------- | ----------- |
+| Training   | **245**     |
+| Validation | ~50         |
+| Test       | ~50         |
+
+👉 A reduced subset is used to keep the project lightweight and focused on pipeline demonstration.
+
+Class Distribution:
+
+* Benign: 625
+* Malignant: 1225
+
+---
+
+ 6. Model Architecture
+
+* Backbone: Swin-Tiny (`swin_tiny_patch4_window7_224`)
+* Pretrained on ImageNet
+* Fine-tuned for binary classification
+
+Custom Head
+
+```id="5nkccp"
+LayerNorm → Dropout → Linear → GELU → Linear
+(768 → 128 → 2)
+```
+ Strategy
+
+* Last 2 stages unfrozen
+* Earlier layers frozen (for stability on small dataset)
+
+---
+
+7. Training Pipeline
+
+### Data Processing
+
+* Patient-level split
+* Macenko stain normalization
 * Augmentations:
 
-  * Random flip
+  * Flip
   * Rotation
   * Color jitter
 
----
+### Handling Imbalance
 
-### **2. Training Configuration**
+* Weighted sampling
+* Class-weighted loss
 
-* **Optimizer:** AdamW (lr = 1e-5, weight_decay = 1e-4)
-* **Scheduler:** CosineAnnealingLR
-* **Loss:** CrossEntropy (with class weights)
-* **Epochs:** 30 (early stopping at 15)
-* **Early Stopping Metric:** Validation F1
+### Training Setup
 
----
-
-### **3. Spatial Attention Visualization**
-
-* Extracted from **final Swin stage (7×7 feature map)**
-* Upsampled to **224×224 resolution**
-* Overlayed as **heatmaps** on original images
-
-**Purpose:**
-
-* Improves interpretability
-* Highlights tumor-relevant tissue regions
-* Provides model reasoning insights
+* Optimizer: AdamW
+* Learning Rate: 1e-5
+* Scheduler: Cosine Annealing
+* Early stopping based on F1 score
 
 ---
 
-## **Why Swin Transformer over ViT**
+ 8. Explainability (Core Feature)
 
-| Feature              | ViT-Small   | Swin-Tiny                |
-| -------------------- | ----------- | ------------------------ |
-| Attention            | Global      | Local window-based       |
-| Hierarchy            | Flat        | Multi-scale hierarchical |
-| Patch Size           | 16×16       | 4×4 (finer detail)       |
-| Data Requirement     | High (>10k) | Works on small datasets  |
-| Tissue Understanding | Limited     | Cell-to-tissue hierarchy |
-| F1 Score             | 68.35%      | **92.86%**               |
+### 🔹 Attention Visualization
 
----
+* Shows where the model is focusing
 
-## **Application Features**
+### 🔹 Grad-CAM
 
-* Preloaded sample images (8 tumor subtypes)
-* Attention heatmap overlay visualization
-* Transformer interpretability insights
-* Performance metrics display
-* ViT vs Swin comparison module
+* Highlights regions influencing predictions
 
 ---
 
-## **Tech Stack**
+### 🔍 How to Interpret Heatmaps
 
-* **PyTorch 2.0** – Training & inference
-* **timm 0.9.12** – Model backbone
-* **Streamlit** – Web interface
-* **scikit-learn** – Metrics
-* **Matplotlib** – Visualization
-* **Docker** – Deployment
-* **Hugging Face Spaces** – Hosting
+* **Red/Yellow:** Important regions
+* **Blue:** Less important
+ Helps understand model focus
 
 ---
 
-## **Disclaimer**
+ Important Note
 
-This model is trained on a **small subset (245 images)** for demonstration purposes only.
-It is **not intended for clinical use** and may not generalize to real-world medical settings.
+* These are **approximate explanations**
+* With limited training data (**245 images**), highlighted regions may not always match true medical features
+
+---
+ 9. How the Model Thinks
+
+The **Swin Transformer**:
+
+* Looks at small regions
+* Compares nearby patterns
+* Builds full understanding step-by-step
+
+---
+
+ 10. Application Features
+
+* Image upload
+* Benign/Malignant prediction
+* Attention heatmaps
+* Grad-CAM visualization
+* Confidence score
+
+---
+
+11. Tech Stack
+
+* PyTorch
+* timm
+* Streamlit
+* scikit-learn
+* Matplotlib
+* Docker
+* Hugging Face Spaces
+
+---
+
+ 12. Limitations
+
+* Trained on **only 245 images**
+* No external validation
+* Grad-CAM is coarse
+* Recall can be improved
+
+---
+ 13. Future Improvements
+
+* Grad-CAM++ / HiResCAM
+* Larger dataset training
+* Cross-validation
+* Better recall
+* Sharper visualizations
+
+---
+
+ 14. Disclaimer
+
+This project is for **educational and demonstration purposes only**.
+Not intended for clinical use.
+
+---
+ Summary
+
+> “I built a proof-of-concept explainable AI system using a Swin Transformer, trained on a small dataset of 245 images, focusing on learning relationships between tissue regions and providing visual explanations using attention maps and Grad-CAM.”
 
 ---
 
