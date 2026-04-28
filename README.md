@@ -9,7 +9,7 @@
 
 ---
 
-## **Project Overview**
+## **Project Overview*
 
 A **Swin Transformer-based deep learning system** for classifying breast histopathology images into **Benign** and **Malignant** categories.
 
