@@ -5,7 +5,7 @@
 # **Breast Cancer Histopathology Classification with Spatial Attention Visualization**
 
 **Author:** Ranjith Kumar
-**Deployment:** HF Space – ranjith445-breakhis-swin.hf.space
+**Deployment:**https://ranjith445-breakhis-swin.hf.space/  
 
 ---
 
